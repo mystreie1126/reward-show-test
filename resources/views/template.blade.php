@@ -24,29 +24,7 @@
           .main-header .showcase {
             padding-top: 20px;
             width:70%;
-            border:1px solid red;
-          }
-
-          .active-link {
-            color: yellow;
-            font-weight: bold;
-          }
-
-          .coming-orders{
-            width:70%;
-            border:1px solid red;
-          }
-
-          .bold{
-            font-weight: bolder;
-          }
-
-      
-          #order-info th{
-            width:20%;
-          }
-          #new-order td{
-            width:20%;
+            border:1px solid grey;
           }
 
 
@@ -58,37 +36,21 @@
           color:black;
           font-weight: bolder;
         }
+      #order .tabs-content.carousel .carousel-item { height: 100%; }
 
-        .voucher-management{
-          height: 50vh;
-        }
-
-        .pull-voucher{
-          /* display: flex;
-          justify-content: space-around;
-          align-items: center;
-          flex-wrap: wrap; */
-        }
-
-        .voucher-result{
-          display: flex;
-          justify-content: space-between;
-          flex-wrap: wrap;
-          align-items:center;
-        }
-
-        @media only screen and (max-width: 900px){
-            .voucher-result{
-              display: flex;
-              flex-direction: column;
-            }
-        }
-
+      #order{
+        border:1px solid grey;
+        border-radius:4px;
+      }
 
         .order-basic-info{
           display: flex;
           justify-content: space-around;
         }
+
+        /* #order .carousel{
+          overflow: unset;
+        } */
         </style>
 
     </head>
@@ -103,7 +65,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.100.2/js/materialize.min.js
 "></script>
     <script type="text/javascript" src="{{URL::asset('js/jquery.js')}}"></script>
-    <script type="text/javascript">
+    {{-- <script type="text/javascript">
 
     $(document).ready(function() {
       $("select").material_select();
@@ -116,6 +78,6 @@
         closeOnSelect:true
     });
 
-    </script>
+    </script> --}}
     </body>
 </html>

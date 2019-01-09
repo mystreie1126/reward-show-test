@@ -3,22 +3,24 @@
     <nav class="indigo">
       <div class="container">
         <div class="nav-wrapper">
-          <a href="#" class="brand-logo">Quazzu</a>
+          @if(Auth::check())
+          <a href="#" class="brand-logo">{{Auth::User()->name}}</a>
+          @endif
           <a href="#" data-activates="mobile-nav" class="button-collapse">
             <i class="fa fa-bars"></i>
           </a>
           <ul class="right hide-on-med-and-down">
-            <li>
+            {{-- <li>
               <a class="active-link" href="index.html">Home</a>
-            </li>
+            </li> --}}
             <li>
-              <a href="solutions.html">Search</a>
+              <a href="solutions.html">Order History</a>
             </li>
            {{--  <li>
               <a href="signup.html">Sign Up</a>
             </li> --}}
              <li>
-              <a href="{{ route('logout') }}" 
+              <a href="{{ route('logout') }}"
                   onclick="event.preventDefault();
                            document.getElementById('logout-form').submit();">
                   Logout
@@ -27,9 +29,9 @@
               <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                   {{ csrf_field() }}
               </form>
-                     
+
             </li>
-            
+
           </ul>
           <ul class="side-nav" id="mobile-nav">
             <h4 class="purple-text text-darken-4 center">Quazzu</h4>
@@ -52,7 +54,7 @@
               <div class="divider"></div>
             </li>
              <li>
-                <a href="{{ route('logout') }}" 
+                <a href="{{ route('logout') }}"
                     onclick="event.preventDefault();
                              document.getElementById('logout-form').submit();">
                     Logout
@@ -61,7 +63,7 @@
                 <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                     {{ csrf_field() }}
                 </form>
-                     
+
               </li>
           </ul>
         </div>

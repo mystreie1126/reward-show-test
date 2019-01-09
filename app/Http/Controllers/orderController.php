@@ -26,7 +26,7 @@ class OrderController extends Controller
             ->select('a.id_order','a.reference','a.id_customer','a.date_add','b.product_name','b.product_reference','b.total_price_tax_incl','b.product_id','ps_rewards.id_reward_state','ps_rewards.credits',
                 'cus.firstname','cus.lastname',
                 'cus.email','a.current_state',
-                'e.active','a.total_paid_tax_incl')
+                'e.active','a.total_paid_tax_incl','ps_rewards.id_reward')
             ->join('ps_customer as cus','a.id_customer','cus.id_customer')
             ->join('ps_order_detail as b','a.id_order','=','b.id_order')
             ->join('ps_feature_product as c','c.id_product','=','b.product_id')
@@ -42,8 +42,8 @@ class OrderController extends Controller
             ->get();
 
             $staff = DB::table('users')->select('name','shop_id')->where('shop_id',Auth::User()->shop_id)->get();
-
-            return response()->json([ 'order' => $data,'staff'=>$staff]);
+            $rockpos = Auth::User()->rockpos;
+            return response()->json([ 'order' => $data,'staff'=>$staff,'rockpos'=>$rockpos]);
     	}
 
 

@@ -31,27 +31,18 @@ Auth::routes();
 
 //Route::get('/order', 'HomeController@index')->name('home');
 
-Route::get('/test',function(){
-	$email = 'a';
-	$vouchers =  DB::table('ps_cart_rule as a')
-									->select('a.id_customer',
-									 DB::raw('sum(a.reduction_amount) as credits'),'b.email')
-									->join('ps_customer as b','a.id_customer','=','b.id_customer')
-									->where('a.quantity',1)->where('a.description','10% Online Credit Back')
-									->groupBy('a.id_customer')
-									//->join('ps_customer as b','a.id_customer','=','b.id_customer')
-									->where('b.email','LIKE','%'.$email.'%')
-									->limit(5)
-									->get();
-									return $vouchers;
+Route::get('/testa',function(){
+
 
 });
 
 Route::get('/',function(){
 	return view('index');
 });
-
+Route::get('/test','voucherController@test');
 Route::get('/neworder','OrderController@newOrder');
 Route::post('/createvoucher','voucherController@createPosVoucher');
 Route::post('/vouchertopos','voucherController@send_voucher_to_rockpos');
 Route::post('/pullvoucher','voucherController@pull_online_voucher_rockpos');
+Route::post('/voucher_results','voucherController@voucher_results');
+Route::post('/checkreward','voucherController@check_reward');

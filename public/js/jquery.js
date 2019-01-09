@@ -1,68 +1,127 @@
  const rockpos_check = 'pos_confirm';
  const online_check = 'normal-confirm';
 
- $(document).ready(function() {
-      $("select").material_select();
-      $(".button-collapse").sideNav();
-      $('.datepicker').pickadate({
-        selectMonths:true,
-        selectYear:15,
-        closeOnSelect:true
-       });
 
-       $('ul.tabs').tabs({
-         swipeable : true,
-         responsiveThreshold : 1920
-       });
-      /* ===========For Rockpos Users====================*/
 
-      //1.Check new orders
-        $('#check_order').click(function(e){
-          e.preventDefault();
-          let url = window.location.href+'neworder';
-          $.ajaxSetup({
-              headers: {
-                  'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-              }
+$(document).ready(function(){
+  $("select").material_select();
+  $(".button-collapse").sideNav();
+  $('.datepicker').pickadate({
+    selectMonths:true,
+    selectYear:15,
+    closeOnSelect:true
+   });
+
+   $('ul.tabs').tabs({
+     swipeable : true,
+     responsiveThreshold : 1920
+   });
+
+
+   //1.new order ajax call
+   $('#get-new-order').click(function(e){
+      e.preventDefault();
+      let url = window.location.href+'neworder';
+
+      $.ajaxSetup({
+          headers: {
+              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+          }
+      });
+
+    var mycall =  $.ajax({
+        url:url,
+        type:'get',
+        dateType:'json',
+        success:function(data){
+          console.log(data);
+          let htmlresult = '';
+          data['order'].forEach(function(e){
+              htmlresult+=
+              "<li id='each-order-details'>"+
+                "<div class='collapsible-header order-basic-info'>"
+                  +"<i class='material-icons indigo-text'>payment</i>"
+                  +"<span class='order-ref indigo-text'>"+e.reference+"</span>"
+                  +"<span class='hide-on-med-and-down'>"+e.date_add+"</span>"
+                  +"<span class='total-amount indigo-text'>"+parseInt(e.total_paid_tax_incl)+" &euro;</span>"
+                +"</div>"
+                +"<div class='collapsible-body row'>"
+                  +"<div class='col s9'>"
+    								+"<span>"+e.product_name+"</span></br>"
+    								+"<span class='indigo-text'>"+e.email+"</span></br>"
+    								+"<span>"+e.credits+"&euro; <span class='voucher-status'>reward amount</span></span>"
+    							+"</div>"
+
+  							+"<button class='col s3 btn green' id='payment-accept'>Payment Accept</button>"
+                +"<button class='col s3 btn hide orange white-text' id='check-remain-voucher'>Transition Completed</button>"
+
+                +"<input type='hidden' value="+e.id_reward+" class='order-reward_id'>"
+                +"<input type='hidden' value="+e.email+" class='order-email'>"
+                +"<input type='hidden' value="+e.firstname+" class='order-firstname'>"
+                +"<input type='hidden' value="+e.lastname+" class='order-lastname'>"
+                +"<input type='hidden' value="+e.credits+" class='order-credits'>"
+                +"<input type='hidden' value="+e.id_customer+" class='order-customer_id'>"
+                +"<input type='hidden' value="+e.product_name+" class='order-product_name'>"
+                +"<input type='hidden' value="+e.reference+" class='order-reference'>"
+                +"<input type='hidden' value="+e.id_order+" class='order-order_id'>"
+                +"<input type='hidden' value="+e.product_id+" class='order-product_id'>"
+                +"<input type='hidden' value="+1+" class='is_device'>"
+                +"<input type='hidden' value="+e.product_id+" class='order-product_id'>"
+                +"<input type='hidden' value="+e.total_paid_tax_incl+" class='order-total_paid'>"
+                +"<input type='hidden' value="+data['staff'][0].name+" class='shopname'>"
+                +"<input type='hidden' value="+data['staff'][0].shop_id+" class='shop_id'>"
+                +"<input type='hidden' value="+new Date().toISOString().slice(0, 19).replace('T', ' ')+" class='current_date'>"
+
+                +"</div>"
+
+              +"</li>"
           });
-          $.ajax({
-            url:url,
-            type:'get',
-            dataType:'json',
-            success:function(data){
-              let htmlresult = '';
-              console.log(data);
-              data['order'].forEach((e)=>{
-                 htmlresult+= "<tr class='new-order-info'><td class='indigo-text'>"+e.reference+"</td>"
 
-                              // +"<td>"+e.firstname +" "+e.lastname+"</td>"
-                              +"<td>"+e.email +"</td><td class='center'><button id='confirm-payment' class='btn-small green bold white-text left'>Confirm</button></td>"
-                              +"<input type='hidden' class='cus_email' value="+e.email+">"
-                              +"<input type='hidden' class='cus_firstname'value="+e.firstname+">"
-                              +"<input type='hidden' class='cus_lastname'value="+e.lastname+">"
+          $('#order-info').html(htmlresult);
+          //2.confirm payment ajax call
+          $('#order-info').on('click','#payment-accept',function(e){
+            $(this).attr('disabled','disabled');
 
-                              +"<input type='hidden' class='cus_credits'value="+e.credits+">"
-                              +"<input type='hidden' class='cus_customer_id'value="+e.id_customer+">"
-                              +"<input type='hidden' class='cus_product_name'value="+e.product_name+">"
-                              +"<input type='hidden' class='cus_reference'value="+e.reference+">"
+            $('#get-new-order').attr('disabled','disabled');
 
-                              +"<input type='hidden' class='cus_order_id'value="+e.id_order+">"
-                              +"<input type='hidden' class='cus_product_id'value="+e.product_id+">"
-                              +"<input type='hidden' class='is_device'value="+1+">"
-                              +"<input type='hidden' class='total_paid'value="+e.total_paid_tax_incl+">"
+            let current_time = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            e.preventDefault();
+            $.ajaxSetup({
+               headers: {
+               'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+             }
+           });
 
+           $.ajax({
+             url:window.location.href+'createvoucher',
+             type:'post',
+             dataType:'json',
+             data:{
+               email:$(this).parent().find('.order-email').val(),
+               firstname:$(this).parent().find('.order-firstname').val(),
+               lastname:$(this).parent().find('.order-lastname').val(),
+               credits:$(this).parent().find('.order-credits').val(),
+               id_customer:$(this).parent().find('.order-customer_id').val(),
+               product_name:$(this).parent().find('.order-product_name').val(),
+               reference:$(this).parent().find('.order-reference').val(),
+               order_id:$(this).parent().find('.order-order_id').val(),
+               id_reward:$(this).parent().find('.order-reward_id').val(),
+               product_id:$(this).parent().find('.order-product_id').val(),
+               device:$(this).parent().find('.is_device').val(),
+               total_paid:$(this).parent().find('.order-total_paid').val(),
+               shopname:$(this).parent().find('.shopname').val(),
+               shop_id:$(this).parent().find('.shop_id').val(),
+               current_time:current_time,
+             },
+             success:function(response){
+               console.log(response);
 
-                              +"<input type='hidden' class='shopname'value="+data['staff'][0].name+">"
-                              +"<input type='hidden' class='shop_id'value="+data['staff'][0].shop_id+">"
-                              +"<input type='hidden' class='current_date' value="+new Date().toISOString().slice(0, 19).replace('T', ' ')+">"
-                              ;
-                              // +"</tr>";
-              });
+               $('.voucher-status').html("<span> reward amount is ready to use</span>");
+               $('#check-remain-voucher').removeClass('hide');
 
-              $('#new-order').html(htmlresult);
+               $('#check-remain-voucher').click(function(e){
 
-              $('#new-order').on('click','#confirm-payment',function(e){
-                //another ajax call
+                 $(this).attr('disabled','disabled');
                  e.preventDefault();
                  $.ajaxSetup({
                     headers: {
@@ -70,154 +129,120 @@
                   }
                 });
 
-                 $.ajax({
-                   url:window.location.href+'createvoucher',
-                   type:'post',
-                   data:{
-                     email:$(this).closest('tr').find('.cus_email').val(),
-                     firstname:$(this).closest('tr').find('.cus_firstname').val(),
-                     lastname:$(this).closest('tr').find('.cus_lastname').val(),
-                     credits:$(this).closest('tr').find('.cus_credits').val(),
-                     id_customer:$(this).closest('tr').find('.cus_customer_id').val(),
-                     product_name:$(this).closest('tr').find('.cus_product_name').val(),
-                     reference:$(this).closest('tr').find('.cus_reference').val(),
-                     order_id:$(this).closest('tr').find('.cus_order_id').val(),
-                     product_id:$(this).closest('tr').find('.cus_product_id').val(),
-                     device:$(this).closest('tr').find('.is_device').val(),
-                     total_paid:$(this).closest('tr').find('.total_paid').val(),
-                     shopname:$(this).closest('tr').find('.shopname').val(),
-                     shop_id:$(this).closest('tr').find('.shop_id').val(),
-                     current_date:$(this).closest('tr').find('.current_date').val(),
+                $.ajax({
+                  url:window.location.href+'checkreward',
+                  type:'post',
+                  dataType:'json',
+                  data:{
+                    pos_credits:response.pos_credits,
+                    pos_rewardid:response.pos_rewardid,
+                    online_orderid:response.online_orderid,
+                    online_customerid:response.online_customerid,
+                    online_rewardid:response.online_rewardid
+                  },
+                  success:function(response){
+                    if(response.reward_used == 1){
+                      $('#each-order-details').remove();
+                      $('#get-new-order').removeAttr('disabled');
+                    }else if(response.reward_used == 0){
+                      let $toastContent = $("<p>Do you wanna proceed without using the reward?</p>")
+                      .add($('<button id="click-toast" class="btn-flat red-text toast-action warning-proceed">Proceed</button>'))
+                      .add($('<button id="click-toast" class="btn-flat toast-action warning-reverse">NO!</button>'));
+                      Materialize.toast($toastContent);
 
-                   },
-                   dataType:'json',
-                   success:function(customer_info){
+                      $('.warning-proceed').click((e)=>{
+                        console.log('proceed');
+                      });
 
-                     //console.log($('#confirm-payment').closest('tr').find('.cus_customer_id').val(),$('#confirm-payment').closest('tr').find('.cus_reference').val());
-                     $('#confirm-payment').replaceWith("<span class='left green-text'>Payment Confirmed</span>");
-                     $('#confirm-payment').prop('disabled', true);
+                      $('.warning-reverse').click((e)=>{
+                        console.log('refused');
+                      });
+                    }
 
-                     // $('#confirm-payment').css('border','none');
-                     //$('#new-order').append(msg);
-                     console.log(customer_info);
-                     if(customer_info.rockpos == 1)
-                     {
-                         let rest = "<td class='left'>"+customer_info.credits+"euro</td><td><button id='voucherToRockpos' class='left white-text btn-small orange'>Send to Rockpos</td>";
-                         $('.new-order-info').append(rest);
-
-                         $('#new-order').on('click','#voucherToRockpos',function(e){
+                  }
+                })
 
 
-                           e.preventDefault();
-                           $.ajaxSetup({
-                              headers: {
-                              'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                            }
-                          });
+                $('#click-toast').click((e)=>{
+                  console.log(3123123);
+                });
+               });
 
-                          $.ajax({
-                            url:window.location.href+'vouchertopos',
-                            type:'post',
-                            data:{
-                              id_customer:customer_info.id_customer,
-                              reference:customer_info.reference
-                            },
-                            dataType:'json',
-                            success:function(response){
-                              console.log(response);
+             },
+             error:function(){
+               console.log('fail to accept payment');
+             }
+           });
 
-                              $('#new-order').remove();
-                              //$('#voucherToRockpos').closest('tr').remove();
-                              // if(response.valid_voucher == 1){
-                              //   $('#voucherToRockpos').replaceWith("<span class='orange-text'>Voucher in RockPos</span>");
-                              // }else if(response.valid_voucher == 0){
-                              //   $('#voucherToRockpos').replaceWith("<span class='left red-text'>No Voucher Available</span>");
-                              // }
-                            },
-                            error:function(error){
-
-                            }
-                          });//end of third ajax call
-
-
-
-
-
-                         });//send to rockpos action
-
-                     }//end of rockposuser
-
-                     else if(response.rockpos == 0){
-
-                     }//end of nonposuser
-
-                   },
-
-                   error:function(x,h,c){
-
-                   }
-                 });//end of second ajax call
-              });
-            },
-            error:function(x,h,r){
-              console.log(x);
-              $('#new-order').html('<p class="red-text">Login Expired!</p>')
-            }
-          });//end of ajax
-
-        });
-
-      //2.pull the voucher from online account
-
-      $('#pull-with-email').click(function(e){
-        e.preventDefault();
-        let email = $.trim($("input[name='mail']").val());
-        let url = window.location.href+'pullvoucher';
-        $.ajaxSetup({
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            }
-        });
-        $.ajax({
-          url:url,
-          type:'post',
-          dataType:'json',
-          data:{email:email},
-          success:function(response){
-            console.log(response);
+          });
+        },
+        statusCode:{
+          404:function(){
+            console.log('page not found');
           },
-          error:function(response){
-
+          401:function(){
+            console.log('Login has expired, please try login again');
           }
-        });
+        }
+      });
+   });//end of new order get request
 
+
+
+   /*=========== search voucher by email ============*/
+
+
+
+
+      $("#email-for-voucher").change(function(){
+        let input = $(this).val();
+         $('#search-voucher-by-email').click(function(e){
+
+             e.preventDefault();
+
+             $.ajaxSetup({
+                 headers: {
+                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                 }
+             });
+
+             $.ajax({
+               url:window.location.href+'voucher_results',
+               type:'post',
+               dateType:'json',
+               data:{email:input},
+               success:function(response){
+                 console.log(response);
+                 if(response.hasVoucher == 0){
+                   $('.voucher-results').html("<p class='red-text flow-text'>Can not find match record!</p>");
+                 }else if(response.hasVoucher > 0){
+
+                 }
+               },
+               error:function(){
+                 console.log('email can not be found!');
+               }
+             })
+         });
       });
 
-});
 
 
 
-//create the voucher
-$(document).on('click', '#new-order', function(e)
-{
 
-   //let data = $('#voucher').find('tr');
-   e.preventDefault();
-   // this.closest('tr').remove();
-   //console.log(data);
-    // let url = window.location.href+'createvoucher';
-    //   $.ajaxSetup({
-    //       headers: {
-    //           'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-    //       }
-    //   });
 
-    //   $.ajax({
-    //     url:url,
-    //     type:'post',
-    //     dataType:'json',
-    //     success:function(data){
-    //       console.log(data);
-    //     }
-    //   });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 });

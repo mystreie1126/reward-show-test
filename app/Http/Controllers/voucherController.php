@@ -10,6 +10,9 @@ use App\Models\Online_voucher;
 use App\Models\POS_voucher;
 use App\Models\POS_voucher_name;
 use App\Models\POS_customer;
+use App\Models\Online_customer;
+use App\Models\Online_reward;
+use App\Models\POS_reward;
 // use App\pos_reward;
 // use App\pos_cart_voucher;
 //
@@ -27,7 +30,8 @@ class voucherController extends Controller
 	public function createPosVoucher(Request $request)
 	{
 
-	    if(Auth::check()){
+	    if(Auth::check())
+			{
 	        $paid_order = new Confirm_payment;
 
 	        $paid_order->paid_amount     = $request->total_paid;
@@ -36,7 +40,7 @@ class voucherController extends Controller
 	        $paid_order->shop_name       = $request->shopname;
 	        $paid_order->rockpos_shop_id = $request->shop_id;
 	        $paid_order->device_order    = $request->device;
-	        $paid_order->created_at      = $request->current_date;
+	        $paid_order->created_at      = $request->current_time;
 
 	        $paid_order->save();
 
@@ -47,134 +51,120 @@ class voucherController extends Controller
 	            $customer_template = $customer->replicate();
 
 
-	            if($customer_template->save())
-							{
-	                $new_customer = POS_customer::findOrFail($customer_template->id_customer);
+		            if($customer_template->save())
+								{
+		                $new_customer = POS_customer::findOrFail($customer_template->id_customer);
 
-	                $new_customer->firstname = $request->firstname;
-	                $new_customer->lastname = $request->lastname;
-	                $new_customer->email = $request->email;
-	                if($new_customer->save())
-									{
-	                    $share_customer = new Shared_customer;
-	                    $share_customer->ie_customerid = $request->id_customer;
-	                    $share_customer->pos_customerid = $new_customer->id_customer;
-	                    $share_customer->created_at = date("Y-m-d H:i:s");
-	                    $share_customer->save();
-	                }
-	             }
+		                $new_customer->firstname = $request->firstname;
+		                $new_customer->lastname = $request->lastname;
+		                $new_customer->email = $request->email;
+		                if($new_customer->save())
+										{
+		                    $share_customer = new Shared_customer;
+		                    $share_customer->ie_customerid = $request->id_customer;
+		                    $share_customer->pos_customerid = $new_customer->id_customer;
+		                    $share_customer->created_at = $request->current_time;
+		                    $share_customer->save();
+		                }
+		             }
+						}//end of check customer
+
+						$credits = Online_reward::findOrFail($request->id_reward)->credits;
+
+						if($credits > 0){
+							$reward = POS_reward::find(2916)->replicate();
+							if($reward->save()){
+								$pos_reward = $reward::findOrFail($reward->id_reward);
+								// $pos_reward->id_reward_state = 2;
+								$pos_reward->id_customer = Shared_customer::where('ie_customerid','=',$request->id_customer)->value('pos_customerid');
+								$pos_reward->credits = $credits;
+								$pos_reward->date_add = $request->current_time;
+								$pos_reward->save();
+
+								DB::table('ps_rewards')->where('id_reward',$request->id_reward)->update(['id_reward_state'=>4]);
+								//DB::table('ps_orders')->where('id_order',$request->order_id)->update(['current_state'=>2]);
+								return response()->json(['pos_credits'=>$pos_reward->credits,
+																				 'online_orderid'=>$request->order_id,
+																			   'online_customerid'=>$request->id_customer,
+																				 'online_rewardid'=>$request->id_reward,
+																				 'pos_rewardid'=>$pos_reward->id_reward
+																			 ]);
+							}
+
+						}else{
+							return response()->json(['valid_credits'=>'can not find valid credits']);
 						}
 
-						$voucher = Online_voucher::find(3011);
-						$voucher_template = $voucher->replicate();
-
-						if($voucher_template->save()){
-								$voucher_new = $voucher_template::findOrFail($voucher_template->id_cart_rule);
-								$voucher_new->id_customer = $request->id_customer;
-								$voucher_new->code = $request->shop_id.'-'.$request->reference;
-								$voucher_new->reduction_amount = $request->credits;
-								$voucher_new->date_add = $request->current_date;
-								$voucher_new->date_upd = $request->current_date;
-								$voucher_new->quantity = 1;
-
-								if($voucher_new->save()){
-										DB::table('ps_cart_rule_lang')->insert([
-												'id_cart_rule' => $voucher_new->id_cart_rule,
-												'id_lang'      => 1,
-												'name'         => '10% Online Credit Back'
-										]);
-
-										// DB::table('ps_orders')->where('id_order',$request->order_id)
-										// 				->update(['current_state'=>2]);
-										// DB::table('ps_product_shop')->where('id_product',$request->product_id)
-										// 				->where('id_shop',1)	->update(['active'=>0]);
 
 
-										return response()->json(
-											['credits' => $request->credits,
-											 'rockpos' => Auth::user()->rockpos,
-										 	 'product' => $request->product_name,
-											 'id_customer' => $request->id_customer,
-											 'reference'=>$request->reference
-										 ]
-
-										);
-								}
-						}
-
-	    }
 
 
-	}
+				}
 
-	public function send_voucher_to_rockpos(Request $request)
+	   }//end of this function
+
+
+
+
+public function check_reward(Request $request)
+{
+	if(Auth::check())
 	{
-		if(Auth::check()){
-			$pos_customer_id = Shared_customer::where('ie_customerid',$request->id_customer)->value('pos_customerid');
 
-			$sum_credits_online = Online_voucher::where('id_customer',$request->id_customer)
-                      ->where('quantity',1)
-                      ->where('description','10% Online Credit Back')
-                      ->sum('reduction_amount');
+		$pos_reward = new POS_reward;
 
+		$pos_reward->refresh();
 
-			if($sum_credits_online > 0 ){
-         $destory_voucher = Online_voucher::where('id_customer',$request->id_customer)
-         ->where('quantity',1)->where('description','10% Online Credit Back')->delete();
-				 $posVoucher_template = POS_voucher::findOrFail(656);
-
-         $posVoucher = $posVoucher_template->replicate();
-
-         if($posVoucher->save()){
-             $pos_new_voucher = $posVoucher::findOrFail($posVoucher->id_cart_rule);
-             $pos_new_voucher->id_customer      = $pos_customer_id;
-             $pos_new_voucher->quantity         = 1;
-             $pos_new_voucher->code             = $request->reference.'*';
-             $pos_new_voucher->reduction_amount = $sum_credits_online;
-
-             if($pos_new_voucher->save()){
-
-                 $pos_new_voucher_name = new POS_voucher_name;
-                 $pos_new_voucher_name->id_cart_rule = $pos_new_voucher->id_cart_rule;
-                 $pos_new_voucher_name->id_lang      = 1;
-                 $pos_new_voucher_name->name         = 'Created_Online';
-                 $pos_new_voucher_name->save();
-             };
+		$reward_state = $pos_reward->where('id_reward',$request->pos_rewardid)->value('id_reward_state');
+		$cart_rule_id = $pos_reward->where('id_reward',$request->pos_rewardid)->value('id_cart_rule');
 
 
-             return response()->json(['id'=>$pos_customer_id,'credits'=>$sum_credits_online,'valid_voucher'=>1]);
-         }
-       }else {
-				 	return response()->json(['valid_voucher'=> 0]);
-			 }
+		$pos_voucher = new POS_voucher;
 
+		$pos_voucher->refresh();
+		$pos_total_reward = $pos_voucher->where('id_cart_rule','>',$cart_rule_id)->where('quantity',1)->sum('reduction_amount');
 
+		if($reward_state == 2){
+			return response()->json(['reward_used'=>0]);
+		}elseif($reward_state == 4 && $pos_total_reward > 0){
+			$update_to_online =	DB::table('ps_rewards')
+					->where('id_reward',$request->online_rewardid)
+					->where('id_customer',$request->online_customerid)
+					->update(['id_reward_state' => 2,'credits'=>$pos_total_reward]);
+
+				if($reward_state){
+						$remain_reward = new POS_voucher;
+						$remain_reward->refresh();
+						$remain_reward->where('id_cart_rule','>',$cart_rule_id)->where('quantity',1)->delete();
+
+						return response()->json(['reward_used'=>1]);
+				}
 
 
 		}
-	}
 
-
-	public function pull_online_voucher_rockpos(Request $request)
-	{
-		if(stripos($request->email,"douglascourt@funtech.ie") !== false){
-          return response()->json(['allowed_to_pull'=> 0]);
-    }else{
-			$vouchers =  DB::table('ps_cart_rule as a')
-	                    ->select('a.id_customer',
-	                     DB::raw('sum(a.reduction_amount) as credits'),'b.firstname','b.lastname','b.email')
-	                    //->join('ps_customer as b','a.id_customer','=','b.id_customer')
-	                    ->where('a.quantity',1)->where('a.description','10% Online Credit Back')
-	                    ->groupBy('a.id_customer')
-	                    ->join('ps_customer as b','a.id_customer','=','b.id_customer')
-	                    ->where('b.email','LIKE','%'.$request->email.'%')
-											->limit(5)
-	                    ->get();
-
-			return response()->json(['allowed_to_pull'=> 1,'voucher' => $vouchers]);
-		}
 
 	}
+}
+
+
+public function voucher_results(Request $request){
+
+	$check_customer = DB::table('ps_customer')
+										->select('id_customer')
+										->where('email','like','%'.$request->email.'%')->get()->first();
+
+
+	// if($check_customer){
+	// 	$r = new Online_reward;
+	// 	$r->refresh();
+	// 	$check_reward = $r->where($check_customer->id_customer)
+	// }
+	return response()->json(['id'=>$check_customer->id_customer]);
+
+
+
+}
 
 
 
